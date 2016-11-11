@@ -1,0 +1,1340 @@
+WEBVTT
+
+1
+00:00:08.777 --> 00:00:12.670
+So now what we're going to do is play a
+little bit with the Google GeoCoding API.
+
+2
+00:00:12.670 --> 00:00:17.180
+So we've got the Google GeoCoding API, we
+have a list of the locations that we want to
+
+3
+00:00:17.180 --> 00:00:21.860
+retrieve, and we want to write and use
+a program to loop through these things and
+
+4
+00:00:21.860 --> 00:00:25.130
+retrieve them one at a time and
+start adding them to a database.
+
+5
+00:00:25.130 --> 00:00:28.649
+And what's cool about this is we can blast
+that and start over and it will look again
+
+6
+00:00:28.649 --> 00:00:32.120
+and skip the ones it's already got and
+only add the ones that are new.
+
+7
+00:00:32.120 --> 00:00:35.740
+Because this has a limitation
+of 2,500 per day,
+
+8
+00:00:35.740 --> 00:00:39.200
+we don't want to waste our calls
+to the Google GeoCoding API.
+
+9
+00:00:39.200 --> 00:00:41.000
+And so we're very careful.
+
+10
+00:00:41.000 --> 00:00:42.620
+We're going to start this, stop it.
+
+11
+00:00:42.620 --> 00:00:46.445
+We might load like 20 and then visualize
+them, and then load 20 more and
+
+12
+00:00:46.445 --> 00:00:50.520
+visualize them, so we want to be able to
+do this in a sort of a separate process.
+
+13
+00:00:50.520 --> 00:00:54.328
+Then we'll play with the data once we
+get it, we'll read it out of geodump,
+
+14
+00:00:54.328 --> 00:00:57.791
+it'll sort of show us some of the data,
+and then it'll create a file and
+
+15
+00:00:57.791 --> 00:01:00.123
+we'll visualize that
+file using the Maps API.
+
+16
+00:01:00.123 --> 00:01:03.270
+The Google Maps API. This here
+is already provided.
+
+17
+00:01:03.270 --> 00:01:05.060
+So let's get to it.
+
+18
+00:01:05.060 --> 00:01:06.260
+Let's get to it.
+
+19
+00:01:06.260 --> 00:01:10.814
+So we start here.
+
+20
+00:01:10.814 --> 00:01:13.260
+This comes in geodata.zip.
+
+21
+00:01:13.260 --> 00:01:16.409
+You can download it from pythonlearn.com.
+
+22
+00:01:16.409 --> 00:01:20.666
+where.data is the input
+to this program
+
+23
+00:01:20.666 --> 00:01:25.160
+and it's just the data that
+came from the survey.
+
+24
+00:01:25.160 --> 00:01:29.120
+People just typed in all
+the different things in their survey.
+
+25
+00:01:29.120 --> 00:01:32.619
+And then, geoload.py is where
+the exciting things happen.
+
+26
+00:01:32.619 --> 00:01:34.610
+And there's a few things
+that we're good at.
+
+27
+00:01:34.610 --> 00:01:36.885
+We know about json and urllib.
+
+28
+00:01:36.885 --> 00:01:41.130
+And sqlite3 is the new
+thing that we're going to import.
+
+29
+00:01:41.130 --> 00:01:45.200
+Here is the base service URL,
+the Google GeoCoding API.
+
+30
+00:01:45.200 --> 00:01:49.060
+And then we're going to basically do
+the equivalent of an open, right,
+
+31
+00:01:49.060 --> 00:01:51.790
+where we're going to say,
+let's create a connection.
+
+32
+00:01:51.790 --> 00:01:56.190
+And a connection is sort of like
+a file handle, and the file name,
+
+33
+00:01:56.190 --> 00:02:02.560
+we're going to connect to an SQLite3 database
+stored in the file named geodata.sqlite.
+
+34
+00:02:02.560 --> 00:02:07.400
+And then we use a cursor as sort
+of a sub-connection within that, so
+
+35
+00:02:07.400 --> 00:02:09.600
+we say, hey,
+dear connection give me a cursor and
+
+36
+00:02:09.600 --> 00:02:12.160
+we're going to store that
+in the variable cur.
+
+37
+00:02:14.070 --> 00:02:18.452
+And we can call a method inside of
+cur to execute a bit of SQL, and
+
+38
+00:02:18.452 --> 00:02:22.421
+so this is just a bit of SQL,
+and we are basically saying,
+
+39
+00:02:22.421 --> 00:02:26.672
+hey, let's create a table,
+only if it doesn't exist yet.
+
+40
+00:02:26.672 --> 00:02:28.820
+If it does exist, don't do anything.
+
+41
+00:02:28.820 --> 00:02:32.400
+We'll name the table Locations, and
+we're going to put two columns in that table.
+
+42
+00:02:32.400 --> 00:02:37.280
+One is an address column, and actually,
+the other is the actual JSON geodata.
+
+43
+00:02:37.280 --> 00:02:39.110
+And they're both text columns.
+
+44
+00:02:39.110 --> 00:02:42.366
+And then we're going to start
+retrieving these things from the API.
+
+45
+00:02:42.366 --> 00:02:46.000
+We're going to open our input data
+which is just one line per.
+
+46
+00:02:47.890 --> 00:02:49.030
+And then we're going to loop through it.
+
+47
+00:02:49.030 --> 00:02:52.750
+We're only going to let
+ourselves do 200 at a time.
+
+48
+00:02:52.750 --> 00:02:54.472
+You can take this out if you want.
+
+49
+00:02:54.472 --> 00:02:58.100
+And we'll strip it,
+the address is the entire line.
+
+50
+00:02:58.100 --> 00:03:02.482
+And then what we're going to
+do is we are going to select
+
+51
+00:03:02.482 --> 00:03:08.260
+the geodata column from the locations
+table with a WHERE clause.
+
+52
+00:03:08.260 --> 00:03:09.925
+And we're going to use the logical key.
+
+53
+00:03:09.925 --> 00:03:14.960
+And we are going to convert to
+take the address that we've read, and
+
+54
+00:03:14.960 --> 00:03:18.840
+buffer as a way to basically force it,
+if it happens to be Unicode,
+
+55
+00:03:18.840 --> 00:03:21.100
+we force it to what we want it to be.
+
+56
+00:03:21.100 --> 00:03:26.180
+And then, this little syntax is a little
+bit tricky in that this is a tuple,
+
+57
+00:03:26.180 --> 00:03:30.050
+so the second parameter to
+this execute is a tuple.
+
+58
+00:03:30.050 --> 00:03:34.130
+And it really only wants to be one value,
+because you need to put a value in for
+
+59
+00:03:34.130 --> 00:03:36.090
+each of the little question
+marks you put here.
+
+60
+00:03:36.090 --> 00:03:38.130
+So this corresponds to that.
+
+61
+00:03:38.130 --> 00:03:39.360
+If there was a second question mark,
+
+62
+00:03:39.360 --> 00:03:41.680
+which we'll see in a second,
+you'd have more things here.
+
+63
+00:03:41.680 --> 00:03:45.500
+But you still have to put this
+parentheses in to make it be a one-tuple.
+
+64
+00:03:45.500 --> 00:03:50.520
+So this is the sub zero entry in
+this tuple as the second parameter
+
+65
+00:03:50.520 --> 00:03:51.570
+to the execute method. Okay?
+
+66
+00:03:53.580 --> 00:03:57.170
+So what that does is that sends
+a SELECT statement to the database.
+
+67
+00:03:57.170 --> 00:03:58.580
+Database looks down and
+
+68
+00:03:58.580 --> 00:04:01.770
+it uses this WHERE clause to see if,
+yup, do I have it or not?
+
+69
+00:04:01.770 --> 00:04:06.150
+Now, first time through we're not going to
+have it because we just made the table.
+
+70
+00:04:06.150 --> 00:04:08.212
+So what we do is after we run the select,
+
+71
+00:04:08.212 --> 00:04:12.224
+we have to read the actual data that comes
+back in the form of a series of rows.
+
+72
+00:04:12.224 --> 00:04:16.457
+So the cur.fetchone, that's our cursor,
+fetchone is the method,
+
+73
+00:04:16.457 --> 00:04:18.640
+fetchone says get me one row.
+
+74
+00:04:18.640 --> 00:04:22.850
+And the row ends up being a list,
+we're only selecting one thing.
+
+75
+00:04:22.850 --> 00:04:28.090
+But it's a list of things and so
+the zero item is the geodata.
+
+76
+00:04:28.090 --> 00:04:31.690
+And so that says grab me a row
+using this cursor, and
+
+77
+00:04:31.690 --> 00:04:35.200
+get the first column, right?
+And bring it back in data.
+
+78
+00:04:35.200 --> 00:04:38.520
+Now if that doesn't exist,
+we're going to go to the except.
+
+79
+00:04:38.520 --> 00:04:42.050
+If it does exist we're going to say "Found
+in database" and we're going to continue.
+
+80
+00:04:42.050 --> 00:04:46.580
+So what happens is if we are reading
+things that are already in the database
+
+81
+00:04:46.580 --> 00:04:49.190
+we're going to go like this and
+it's going to happen really fast and
+
+82
+00:04:49.190 --> 00:04:53.040
+we're not talking to Google at
+all in this particular loop. Okay?
+
+83
+00:04:53.040 --> 00:04:56.750
+But if there is no data, and
+there will be no data on the first one,
+
+84
+00:04:56.750 --> 00:04:58.930
+if there us no data it hits the exception,
+
+85
+00:04:58.930 --> 00:05:01.814
+then it comes through with a pass and
+continues on.
+
+86
+00:05:01.814 --> 00:05:05.802
+This is what happens when there
+is no data in the database.
+
+87
+00:05:05.802 --> 00:05:08.160
+So the first thing it does,
+it prints out a thing.
+
+88
+00:05:08.160 --> 00:05:10.840
+We do a serviceurl, urllib.encode.
+
+89
+00:05:10.840 --> 00:05:12.320
+You've done this before.
+
+90
+00:05:12.320 --> 00:05:15.476
+And then we do a urlopen.
+
+91
+00:05:15.476 --> 00:05:19.811
+If you have a problem, there's some
+explanation in the readme about what to
+
+92
+00:05:19.811 --> 00:05:22.604
+deal with if you get
+a certificate problem here.
+
+93
+00:05:22.604 --> 00:05:26.894
+And so we just open the URL and we read
+the URL and then we retrieve some data,
+
+94
+00:05:26.894 --> 00:05:28.478
+we print some stuff out, and
+
+95
+00:05:28.478 --> 00:05:31.850
+then what we're going to do is check
+to see if we got good data.
+
+96
+00:05:31.850 --> 00:05:34.865
+When you're doing sort of like a spidering
+like process you've got to check to see if
+
+97
+00:05:34.865 --> 00:05:36.300
+we're good data.
+
+98
+00:05:36.300 --> 00:05:40.380
+And so we're converting the data in
+case it happens to be Unicode to string.
+
+99
+00:05:40.380 --> 00:05:44.990
+We do a load s which is load string
+using JSON from the json library.
+
+100
+00:05:44.990 --> 00:05:47.510
+And what we're really trying to see is,
+is this going to work or not?
+
+101
+00:05:47.510 --> 00:05:49.550
+And that's why we put it into try/except.
+
+102
+00:05:49.550 --> 00:05:52.390
+If it doesn't work, we're going to
+just say blow up and continue.
+
+103
+00:05:52.390 --> 00:05:55.250
+Because there's nothing we can
+do because it's bad JSON.
+
+104
+00:05:55.250 --> 00:05:58.360
+Once we got good JSON,
+we can look for a status variable and
+
+105
+00:05:58.360 --> 00:06:00.650
+that would be in the JSON.
+
+106
+00:06:00.650 --> 00:06:04.526
+If there is no status, or
+if the status is not OK, or
+
+107
+00:06:04.526 --> 00:06:08.690
+if the status is zero results,
+then we're going to complain.
+
+108
+00:06:08.690 --> 00:06:11.550
+We're going to say "Failure to Retrieve"
+and print it out and quit.
+
+109
+00:06:11.550 --> 00:06:15.020
+This whole little pattern of if something
+goes wrong print the data out and
+
+110
+00:06:15.020 --> 00:06:17.994
+quit allows you to go back and
+adjust the program a little bit.
+
+111
+00:06:17.994 --> 00:06:22.410
+And when you're first building this,
+you'll find that you need to put
+
+112
+00:06:22.410 --> 00:06:25.460
+more intelligence in here, and
+if something goes wrong, you blow up and
+
+113
+00:06:25.460 --> 00:06:27.170
+then you start the program and
+you run it again.
+
+114
+00:06:28.450 --> 00:06:29.680
+But this one sort of works, and so
+
+115
+00:06:29.680 --> 00:06:31.770
+we probably won't have to
+do that too many times.
+
+116
+00:06:33.320 --> 00:06:38.130
+Now, if we get all the way down to here,
+at this point we have got
+
+117
+00:06:38.130 --> 00:06:43.528
+the data which we read from the URL and
+we're going to insert it into the database.
+
+118
+00:06:43.528 --> 00:06:47.770
+So we're going to INSERT INTO the table
+named Locations the address and
+
+119
+00:06:47.770 --> 00:06:51.930
+the actual data, this is the actual
+JSON data here, yada yada.
+
+120
+00:06:51.930 --> 00:06:54.550
+Values, and then we have two
+little question mark guys and so
+
+121
+00:06:54.550 --> 00:06:58.020
+this here is the SQL command that
+we're sending to the database and
+
+122
+00:06:58.020 --> 00:06:59.900
+then we got to send a two-tuple in.
+
+123
+00:06:59.900 --> 00:07:05.480
+So that's a tuple and the zero is the
+address and the one is the actual data.
+
+124
+00:07:05.480 --> 00:07:10.080
+So that is going to do an insert with two
+parameters, the address and the data, and
+
+125
+00:07:10.080 --> 00:07:11.610
+so that's going to add a row to the table.
+
+126
+00:07:13.220 --> 00:07:15.260
+And then we have this thing called commit.
+
+127
+00:07:15.260 --> 00:07:17.970
+And what happens is, for
+performance reasons
+
+128
+00:07:17.970 --> 00:07:21.590
+it doesn't write every single thing
+that you're doing to the database, but
+
+129
+00:07:21.590 --> 00:07:25.210
+when you say commit,
+then it says now write it to the database.
+
+130
+00:07:25.210 --> 00:07:27.170
+Actual file on disk.
+
+131
+00:07:27.170 --> 00:07:31.110
+And what happens is, if we were to
+blow up this program right here,
+
+132
+00:07:31.110 --> 00:07:33.310
+then it's halfway done.
+
+133
+00:07:33.310 --> 00:07:35.460
+The database would not
+see those transactions.
+
+134
+00:07:35.460 --> 00:07:38.712
+But if after we get to this point,
+and then we're going to sleep and
+
+135
+00:07:38.712 --> 00:07:41.920
+wait a second so we can go up, so
+we're not doing this too fast.
+
+136
+00:07:43.400 --> 00:07:45.730
+The commit basically says it's
+all written to disk, and so
+
+137
+00:07:45.730 --> 00:07:49.230
+if the program blows up at some point,
+we're not going to lose any data.
+
+138
+00:07:49.230 --> 00:07:51.820
+So that's one of the things
+we're kind of appending to this.
+
+139
+00:07:51.820 --> 00:07:53.510
+Committing.
+Insert.
+
+140
+00:07:53.510 --> 00:07:54.360
+Commit.
+Insert.
+
+141
+00:07:54.360 --> 00:07:55.120
+Commit.
+Insert.
+
+142
+00:07:55.120 --> 00:07:56.510
+Commit.
+And blow up.
+
+143
+00:07:56.510 --> 00:07:59.430
+Well, the data, all the inserts
+will be on that actual file.
+
+144
+00:07:59.430 --> 00:08:03.720
+And so, it makes sure the file works
+even in the case.
+
+145
+00:08:03.720 --> 00:08:06.433
+And so, this loop, we're actually
+going to blow it up, right?
+
+146
+00:08:06.433 --> 00:08:07.730
+We're not actually going to run it.
+
+147
+00:08:07.730 --> 00:08:09.330
+If it ran for 200 it could run for 200.
+Okay?
+
+148
+00:08:10.840 --> 00:08:15.556
+So that's basically the code that we're
+dealing with, so let's go ahead and
+
+149
+00:08:15.556 --> 00:08:16.563
+try to run that.
+
+150
+00:08:18.791 --> 00:08:20.513
+Okay, so here we are.
+
+151
+00:08:20.513 --> 00:08:22.030
+Oops, go back.
+
+152
+00:08:24.631 --> 00:08:26.000
+Here we are.
+
+153
+00:08:26.000 --> 00:08:29.550
+And I grabbed the geodata.zip,
+and I've unzipped it.
+
+154
+00:08:29.550 --> 00:08:31.500
+And right now I've got some files in here.
+
+155
+00:08:31.500 --> 00:08:34.380
+A where.data,
+all the files that I showed you.
+
+156
+00:08:34.380 --> 00:08:41.760
+So now I'm going to run python geoload,
+okay? And it's going to create a database
+
+157
+00:08:41.760 --> 00:08:45.610
+and then it's going to start reading from
+where.data and it's going to, for each one,
+
+158
+00:08:45.610 --> 00:08:49.180
+check to see if it's in the database and
+if it's not it's going to call Google.
+
+159
+00:08:49.180 --> 00:08:51.030
+So here we go, it's calling Google,
+
+160
+00:08:51.030 --> 00:08:54.190
+called Google,
+waiting a second between each one.
+
+161
+00:08:54.190 --> 00:08:56.361
+Now, I can hit Ctrl+C.
+
+162
+00:08:56.361 --> 00:09:01.500
+Ctrl+C is the way you blow up
+a terminal program, I just blew it up.
+
+163
+00:09:01.500 --> 00:09:04.967
+And I can, the Ctrl+Z is how you
+do it on Windows and
+
+164
+00:09:04.967 --> 00:09:07.723
+Ctrl+C is how you do it on
+Mac and Linux. Okay?
+
+165
+00:09:07.723 --> 00:09:14.248
+And so I blew this up, but there is
+now a database. ls, geodata.sqlite.
+
+166
+00:09:14.248 --> 00:09:16.268
+Well, let's check to see
+what's in the database.
+
+167
+00:09:19.669 --> 00:09:25.630
+And so we are going to go right here,
+and we have this file geodata.sqlite.
+
+168
+00:09:25.630 --> 00:09:29.662
+It's down here, code/pythonlearn/geodata,
+wherever you put this file, and
+
+169
+00:09:29.662 --> 00:09:30.648
+geodata.sqlite.
+
+170
+00:09:30.648 --> 00:09:32.490
+So let's take a look.
+
+171
+00:09:32.490 --> 00:09:34.540
+So now we'll do Browse Data.
+
+172
+00:09:34.540 --> 00:09:37.170
+So now what we have,
+make these a little bigger.
+
+173
+00:09:38.280 --> 00:09:39.530
+Look at that.
+
+174
+00:09:39.530 --> 00:09:42.470
+Happy little. Okay?
+
+175
+00:09:42.470 --> 00:09:46.800
+And so this is the JSON that came back.
+
+176
+00:09:46.800 --> 00:09:50.880
+And so what you see is you see
+Northeastern University, Hong Kong,
+
+177
+00:09:52.255 --> 00:09:54.980
+Technion. I don't know where these things
+are, but then we have the data, right?
+
+178
+00:09:57.510 --> 00:09:59.210
+So the data is being accumulated.
+
+179
+00:09:59.210 --> 00:10:03.030
+So now what we're going to do
+is we're going to run it again.
+
+180
+00:10:03.030 --> 00:10:07.200
+And we'll see that when we run it again,
+
+181
+00:10:07.200 --> 00:10:12.730
+let me clear this,
+it's going to read from all of them.
+
+182
+00:10:12.730 --> 00:10:16.130
+But it's first going to check the,
+before it retrieves it,
+
+183
+00:10:16.130 --> 00:10:17.670
+it's going to check if it's already got it.
+
+184
+00:10:17.670 --> 00:10:19.236
+So watch what happens.
+
+185
+00:10:19.236 --> 00:10:20.740
+It's going to go really quick.
+
+186
+00:10:20.740 --> 00:10:23.050
+And show like, oh found it, found it,
+found it, found it, found it.
+
+187
+00:10:23.050 --> 00:10:24.740
+And quickly get to the end
+
+188
+00:10:24.740 --> 00:10:26.050
+where it's actually got to add new data.
+
+189
+00:10:26.050 --> 00:10:26.690
+So here we go.
+
+190
+00:10:26.690 --> 00:10:27.690
+Found it. Found it. Found it.
+
+191
+00:10:27.690 --> 00:10:28.470
+See, it found it.
+Right?
+
+192
+00:10:29.540 --> 00:10:32.480
+Found it in the database, and
+now it's retrieving new stuff.
+
+193
+00:10:32.480 --> 00:10:33.775
+And we could let it run for
+a little while.
+
+194
+00:10:33.775 --> 00:10:38.243
+Something could go wrong,
+you could close your laptop and
+
+195
+00:10:38.243 --> 00:10:39.490
+then it blows up.
+
+196
+00:10:39.490 --> 00:10:41.460
+So let's go back,
+see what's in the database.
+
+197
+00:10:42.690 --> 00:10:45.720
+I can hit Refresh on this, and see
+our database keeps growing. Okay?
+
+198
+00:10:47.990 --> 00:10:51.700
+And if I do this one more time,
+I can run it again, and
+
+199
+00:10:51.700 --> 00:10:54.870
+you'll notice that it zooms
+through the ones it already has.
+
+200
+00:10:54.870 --> 00:10:56.856
+So it's not hitting Google at all.
+
+201
+00:10:56.856 --> 00:10:59.060
+So we're saving our 2500.
+
+202
+00:10:59.060 --> 00:11:04.513
+So now it's on to the new ones.
+Okay?
+
+203
+00:11:04.513 --> 00:11:05.790
+So you get the idea.
+
+204
+00:11:05.790 --> 00:11:08.166
+So now I'm going to hit Ctrl+C.
+Okay?
+
+205
+00:11:08.166 --> 00:11:10.000
+And I'm going to hit Refresh here.
+
+206
+00:11:11.940 --> 00:11:15.080
+And you see that it just keeps
+adding more and more files.
+
+207
+00:11:15.080 --> 00:11:17.580
+More and more locations to our
+little database.
+
+208
+00:11:17.580 --> 00:11:25.070
+So the next thing we're going to do is
+we're going to run the file geodump.py.
+
+209
+00:11:25.070 --> 00:11:26.280
+So we're filling the database up.
+
+210
+00:11:26.280 --> 00:11:28.600
+We have this crawler that
+sort of starts and restarts.
+
+211
+00:11:29.890 --> 00:11:33.430
+And so we're going to just connect to
+the database, get ourselves a cursor, and
+
+212
+00:11:33.430 --> 00:11:40.650
+we're going to execute 
+a SELECT * FROM Locations,
+
+213
+00:11:40.650 --> 00:11:43.520
+which just basically is
+going to retrieve all the rows.
+
+214
+00:11:43.520 --> 00:11:49.480
+We're going to open a file where.js
+write with a UTF character set.
+
+215
+00:11:49.480 --> 00:11:52.010
+And then we're going to start
+writing some code.
+
+216
+00:11:52.010 --> 00:11:53.700
+And we're going to write actually some JSON.
+
+217
+00:11:53.700 --> 00:11:55.540
+Don't worry too much about this.
+
+218
+00:11:55.540 --> 00:11:57.600
+We'll show you how this
+turns out in a bit.
+
+219
+00:11:57.600 --> 00:12:02.410
+And then, this cursor,
+the cursor like keeps track of where in,
+
+220
+00:12:02.410 --> 00:12:05.330
+so here's the database, and
+here's a bunch of records in the database.
+
+221
+00:12:05.330 --> 00:12:08.880
+The cursor can be repeatedly go down
+each of the records in the database and
+
+222
+00:12:08.880 --> 00:12:10.050
+that's what we're going to do.
+
+223
+00:12:10.050 --> 00:12:13.470
+for row in cursor, so
+row is an iteration variable,
+
+224
+00:12:13.470 --> 00:12:16.040
+it's going to go through each
+of the rows in that table.
+
+225
+00:12:17.270 --> 00:12:22.286
+And row is going to be a two-dimensional
+array with positions 0 and 1,
+
+226
+00:12:22.286 --> 00:12:26.364
+where 0 is the address and
+1 is the actual data. Okay?
+
+227
+00:12:26.364 --> 00:12:31.340
+And so, we're going to grab this,
+the row, convert it to a string.
+
+228
+00:12:31.340 --> 00:12:34.480
+We're going to read it and json load it.
+
+229
+00:12:34.480 --> 00:12:36.760
+If we get a JSON error,
+we're going to just go back up.
+
+230
+00:12:36.760 --> 00:12:40.390
+If not, we're going to check to
+see if the status is okay.
+
+231
+00:12:40.390 --> 00:12:41.800
+If not, go back.
+
+232
+00:12:41.800 --> 00:12:46.034
+But then, we're going to do exactly what
+we did in that previous assignment,
+
+233
+00:12:46.034 --> 00:12:50.481
+we're going to pull out of that JSON but
+this JSON is now coming from our database.
+
+234
+00:12:50.481 --> 00:12:54.230
+And we're going to get the formatted
+address and check the sanity.
+
+235
+00:12:54.230 --> 00:12:56.479
+We're going to replace single
+quotes with nothing.
+
+236
+00:12:57.570 --> 00:13:01.926
+And when it's all said and
+done we are going to print out
+
+237
+00:13:05.373 --> 00:13:09.418
+in a particular format. we're
+going to print out the latitude,
+
+238
+00:13:09.418 --> 00:13:13.705
+the longitude, and the location,
+and then write that out.
+
+239
+00:13:13.705 --> 00:13:17.015
+So this is actually writing a file,
+but it's probably just as easy for
+
+240
+00:13:17.015 --> 00:13:19.575
+me to run it and
+then show you what the file looks like.
+
+241
+00:13:19.575 --> 00:13:22.918
+But it basically is producing
+a file in a particular format.
+
+242
+00:13:26.040 --> 00:13:32.736
+So if I run python geodump,
+21 records were written to where.js,
+
+243
+00:13:32.736 --> 00:13:37.665
+it tells us to open where.html
+to view the data in the browser,
+
+244
+00:13:37.665 --> 00:13:41.130
+and it's dumping data as it sees it.
+
+245
+00:13:41.130 --> 00:13:45.460
+So if I take a look at where.js,
+this is a format called JSON,
+
+246
+00:13:45.460 --> 00:13:49.540
+which is JavaScript Object Notation, well,
+of course we talked about that before,
+
+247
+00:13:49.540 --> 00:13:51.420
+except now we're going to
+actually use it in JavaScript.
+
+248
+00:13:51.420 --> 00:13:55.320
+And so, this is just JSON data
+that's an array of arrays, and
+
+249
+00:13:55.320 --> 00:13:59.790
+it is the GPS coordinates and
+the name of the place.
+
+250
+00:13:59.790 --> 00:14:04.770
+But this is the name of the place that
+came from, these are the names of the places
+
+251
+00:14:04.770 --> 00:14:08.790
+that came from the Google API as compared
+to coming from the end user.
+
+252
+00:14:08.790 --> 00:14:10.933
+So we kind of cleaned up the user's data.
+
+253
+00:14:10.933 --> 00:14:13.742
+And so we have an array of arrays.
+
+254
+00:14:13.742 --> 00:14:17.494
+And that,
+
+255
+00:14:17.494 --> 00:14:21.396
+if you then open where.html,
+
+256
+00:14:21.396 --> 00:14:25.306
+we could do this in my browser.
+
+257
+00:14:28.742 --> 00:14:31.040
+And so it's giving me the OK.
+
+258
+00:14:31.040 --> 00:14:34.037
+If you're an HTML expert, you could
+take a look at this stuff, and so
+
+259
+00:14:34.037 --> 00:14:36.843
+this is using the Google map,
+and it's reading that JSON data.
+
+260
+00:14:36.843 --> 00:14:38.140
+Don't worry too much about this.
+
+261
+00:14:38.140 --> 00:14:40.050
+You can look at it as much or
+as little as you want.
+
+262
+00:14:40.050 --> 00:14:41.386
+It should just work. Okay?
+
+263
+00:14:41.386 --> 00:14:46.350
+And so, here we have
+those first 21 places.
+
+264
+00:14:46.350 --> 00:14:47.930
+Now here's the interesting
+thing that we can do.
+
+265
+00:14:47.930 --> 00:14:49.691
+Let me re-size this a little bit.
+
+266
+00:14:49.691 --> 00:14:53.970
+The interesting thing we can do now
+is we can go and do this again.
+
+267
+00:14:53.970 --> 00:14:57.260
+We can say python geoload.py,
+
+268
+00:14:57.260 --> 00:15:01.010
+that's pulling data and
+putting it into our database.
+
+269
+00:15:01.010 --> 00:15:02.450
+And we'll let that run for a while.
+
+270
+00:15:02.450 --> 00:15:04.350
+It sees that some things are there.
+
+271
+00:15:04.350 --> 00:15:06.738
+We'll just run and
+put a few more results in.
+
+272
+00:15:11.556 --> 00:15:15.758
+Okay, and I'll just hit Ctrl+C,
+and it blows up.
+
+273
+00:15:15.758 --> 00:15:18.600
+But that's not really
+a problem because I blew it up.
+
+274
+00:15:18.600 --> 00:15:25.040
+And then I can run python geodump, and
+that's taking the data from the database
+
+275
+00:15:25.040 --> 00:15:30.760
+and updating the JSON stuff, it's where.js
+and you actually see this right here.
+
+276
+00:15:30.760 --> 00:15:32.200
+It's got more data.
+
+277
+00:15:32.200 --> 00:15:34.370
+So that file's now got new data.
+
+278
+00:15:34.370 --> 00:15:37.603
+And if I go back to my browser,
+I should be able to hit Refresh and
+
+279
+00:15:37.603 --> 00:15:39.803
+you'll see a bunch of new pins popping up.
+
+280
+00:15:43.621 --> 00:15:44.460
+So yeah.
+
+281
+00:15:44.460 --> 00:15:45.080
+There are more pins. Okay?
+
+282
+00:15:46.500 --> 00:15:48.580
+So this is one of those things
+where you can start it,
+
+283
+00:15:48.580 --> 00:15:52.610
+you can run it, you can restart it,
+etc., etc., etc.
+
+284
+00:15:52.610 --> 00:15:54.330
+And so I just wanted to run you
+through that.
+
+285
+00:15:55.590 --> 00:15:58.279
+And then you can go ahead and
+play with this on your own.
